@@ -944,6 +944,7 @@ function saveRefMemory(memory) {
 }
 
 function extractRef(description) {
+  if (!description || typeof description !== 'string') return null;
   const match = description.match(/\b(\d{8,})\b/);
   return match ? match[1] : null;
 }
@@ -951,6 +952,7 @@ function extractRef(description) {
 function applyRefMemory(items) {
   const memory = getRefMemory();
   return items.map(item => {
+    if (item._grouped) return item;
     const ref = extractRef(item.description);
     if (ref && memory[ref]) {
       return { ...item, description: memory[ref].name, owner: memory[ref].owner || item.owner, _ref: ref, _autoFilled: true };
