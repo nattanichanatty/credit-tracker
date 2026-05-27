@@ -1212,21 +1212,36 @@ function loadSummary() {
   netEl.textContent = `฿${net.toLocaleString()}`;
   netEl.className = 'metric-value net ' + (net >= 0 ? 'positive' : 'negative');
 
-  const debtors = {};
+  const debtorItems = {};
   ccData.filter(i => i.owner && i.owner !== 'ตัวเอง').forEach(i => {
-    debtors[i.owner] = (debtors[i.owner] || 0) + i.amount_per_installment;
+    if (!debtorItems[i.owner]) debtorItems[i.owner] = [];
+    debtorItems[i.owner].push(i);
   });
 
   const debtorGrid = document.getElementById('debtor-grid');
-  if (Object.keys(debtors).length === 0) {
+  if (Object.keys(debtorItems).length === 0) {
     debtorGrid.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:16px;">ไม่มีรายการของคนอื่น</div>';
   } else {
-    debtorGrid.innerHTML = Object.entries(debtors).map(([name, amt]) => `
-      <div class="debtor-card">
+    debtorGrid.innerHTML = Object.entries(debtorItems).map(([name, items]) => {
+      const amt = items.reduce((s,i) => s + i.amount_per_installment, 0);
+      const detailId = `debtor-detail-${name.replace(/\s/g,'_')}`;
+      return `
+      <div class="debtor-card" style="cursor:pointer;" onclick="toggleDebtorDetail('${detailId}')">
         <div class="debtor-name">${name}</div>
         <div class="debtor-amount">฿${amt.toLocaleString()}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px;">ต้องเก็บ</div>
-      </div>`).join('');
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;display:flex;justify-content:space-between;align-items:center;">
+          <span>ต้องเก็บ · ${items.length} รายการ</span>
+          <span id="arrow-${detailId}" style="color:var(--accent);">▼</span>
+        </div>
+        <div id="${detailId}" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:8px;">
+          ${items.map(i => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;gap:8px;">
+              <span style="color:var(--text);flex:1;">${i.description}${i.is_installment ? ` <span class="installment-badge" style="font-size:10px;">${i.current_installment}/${i.total_installments}</span>` : ''}</span>
+              <span class="amount" style="font-size:12px;color:var(--orange);">฿${i.amount_per_installment.toLocaleString()}</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
   }
 
   const cardBreakdown = document.getElementById('card-breakdown');
@@ -1246,6 +1261,19 @@ function loadSummary() {
       </div>`).join('')}
     </div>`;
   }).join('');
+}
+
+function toggleDebtorDetail(id) {
+  const el = document.getElementById(id);
+  const arrow = document.getElementById('arrow-' + id);
+  if (!el) return;
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    if (arrow) arrow.textContent = '▲';
+  } else {
+    el.style.display = 'none';
+    if (arrow) arrow.textContent = '▼';
+  }
 }
 
 function saveApiKey() {
