@@ -1293,6 +1293,31 @@ function renderMonthlyItems(items, month, year) {
       <div style="font-size:12px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;margin-bottom:8px;">${card} · ฿${total.toLocaleString()}</div>
       ${cardItems.map((item) => {
         const globalIdx = items.indexOf(item);
+        if (item._grouped && item._items && item._items.length > 0) {
+          const subTotal = item._items.reduce((s,si) => s + si.amount_per_installment, 0);
+          const expandId = `expand-${globalIdx}`;
+          return `<div style="border:1px solid var(--border);border-radius:8px;margin-bottom:6px;overflow:hidden;">
+            <div class="list-item" style="gap:8px;flex-wrap:wrap;border-radius:0;border:none;cursor:pointer;" onclick="toggleExpand('${expandId}')">
+              <span style="font-size:13px;color:var(--accent);">▶</span>
+              <input type="text" class="owner-input" style="min-width:160px;flex:1;" value="${item.description}"
+                oninput="updateMonthlyItem(${globalIdx},'description',this.value,'${month}','${year}')" onclick="event.stopPropagation()">
+              <span style="font-size:11px;background:#1a2a1a;color:var(--green);border:1px solid #2a4a2a;border-radius:4px;padding:2px 8px;">${item._items.length} รายการ</span>
+              <span class="amount" style="color:var(--orange);">฿${item.amount_per_installment.toLocaleString()}</span>
+              <input type="text" class="owner-input" style="width:110px;" value="${item.owner||''}" placeholder="ตัวเอง"
+                oninput="updateMonthlyItem(${globalIdx},'owner',this.value,'${month}','${year}')" onclick="event.stopPropagation()">
+              <button class="del-btn" onclick="event.stopPropagation();deleteMonthlyItem(${globalIdx},'${month}','${year}')" style="color:var(--red);">✕</button>
+            </div>
+            <div id="${expandId}" style="display:none;background:var(--surface2);border-top:1px solid var(--border);padding:8px 12px;">
+              ${item._items.map(sub => `
+                <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;">
+                  <span style="flex:1;color:var(--muted);">${sub.description}</span>
+                  ${sub.is_installment ? `<span class="installment-badge">${sub.current_installment}/${sub.total_installments}</span>` : ''}
+                  <span class="amount">฿${sub.amount_per_installment.toLocaleString()}</span>
+                  ${sub.owner ? `<span class="tag other">${sub.owner}</span>` : ''}
+                </div>`).join('')}
+            </div>
+          </div>`;
+        }
         return `<div class="list-item" style="gap:8px;flex-wrap:wrap;">
           <input type="text" class="owner-input" style="min-width:160px;flex:1;" value="${item.description}"
             oninput="updateMonthlyItem(${globalIdx},'description',this.value,'${month}','${year}')">
@@ -1305,6 +1330,19 @@ function renderMonthlyItems(items, month, year) {
       }).join('')}
     </div>`;
   }).join('');
+}
+
+function toggleExpand(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const arrow = el.previousElementSibling?.querySelector('span');
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    if (arrow) arrow.textContent = '▼';
+  } else {
+    el.style.display = 'none';
+    if (arrow) arrow.textContent = '▶';
+  }
 }
 
 function updateMonthlyItem(idx, field, val, month, year) {
