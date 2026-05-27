@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Credit Card Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #242424;
+    --border: #2e2e2e;
+    --text: #f0f0f0;
+    --muted: #888;
+    --accent: #e8ff5a;
+    --accent-dark: #c8df3a;
+    --green: #4ade80;
+    --red: #f87171;
+    --blue: #60a5fa;
+    --orange: #fb923c;
+    --radius: 12px;
+    --font: 'IBM Plex Sans Thai', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
+
+  .header h1 span { color: var(--accent); }
+
+  .badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 4px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab.active {
+    background: var(--accent);
+    color: #000;
+    font-weight: 600;
+  }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 48px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 20px;
+    background: var(--surface);
+  }
+
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: #1f1f1f;
+  }
+
+  .upload-zone input { display: none; }
+
+  .upload-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+  }
+
+  .upload-zone p { color: var(--muted); font-size: 14px; }
+  .upload-zone strong { color: var(--accent); }
+
+  .card-select {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .card-btn {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+
+  .card-btn:hover { border-color: var(--accent); }
+  .card-btn.selected { border-color: var(--accent); background: #1f1f10; }
+
+  .card-btn .card-name {
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .card-btn .card-bank {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .ttb { border-left: 3px solid #0066cc; }
+  .firstchoice { border-left: 3px solid #ff6600; }
+  .spaylater { border-left: 3px solid #6366f1; }
+
+  .analyze-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: var(--radius);
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .analyze-btn:hover { background: var(--accent-dark); }
+  .analyze-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .result-section {
+    margin-top: 24px;
+  }
+
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+
+  .result-table th {
+    text-align: left;
+    padding: 10px 12px;
+    background: var(--surface);
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .result-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  .result-table tr:hover td { background: var(--surface); }
+
+  .owner-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 8px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    width: 120px;
+  }
+
+  .owner-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .installment-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--blue);
+  }
+
+  .amount {
+    font-family: var(--mono);
+    font-weight: 500;
+  }
+
+  .save-btn {
+    padding: 10px 24px;
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: var(--radius);
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .save-btn:hover { background: var(--accent); color: #000; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .metric-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .metric-value {
+    font-size: 22px;
+    font-weight: 600;
+    font-family: var(--mono);
+  }
+
+  .metric-value.income { color: var(--green); }
+  .metric-value.expense { color: var(--red); }
+  .metric-value.net.positive { color: var(--green); }
+  .metric-value.net.negative { color: var(--red); }
+  .metric-value.cc { color: var(--orange); }
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title::before {
+    content: '';
+    width: 4px;
+    height: 16px;
+    background: var(--accent);
+    border-radius: 2px;
+    display: inline-block;
+  }
+
+  .input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+  }
+
+  .form-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    width: 100%;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .add-btn {
+    padding: 10px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    font-family: var(--font);
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+
+  .add-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--surface);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+
+  .list-item .del-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .list-item .del-btn:hover { color: var(--red); background: #2a1a1a; }
+
+  .debtor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .debtor-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+
+  .debtor-name {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .debtor-amount {
+    font-size: 18px;
+    font-weight: 600;
+    font-family: var(--mono);
+    color: var(--orange);
+  }
+
+  .loading {
+    text-align: center;
+    padding: 32px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .loading::after {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 10px;
+    vertical-align: middle;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .config-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .config-label {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .month-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    align-items: center;
+  }
+
+  select.form-input { cursor: pointer; }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: var(--mono);
+  }
+
+  .tag.self { background: #1a2a1a; color: var(--green); border: 1px solid #2a4a2a; }
+  .tag.other { background: #2a1a0a; color: var(--orange); border: 1px solid #4a2a0a; }
+
+  .gs-status {
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    margin-top: 12px;
+  }
+
+  .gs-status.ok { background: #1a2a1a; color: var(--green); border: 1px solid #2a4a2a; }
+  .gs-status.err { background: #2a1a1a; color: var(--red); border: 1px solid #4a1a1a; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+  }
+
+  .preview-img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    margin-top: 12px;
+    object-fit: contain;
+  }
+
+  .file-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 12px;
+    font-size: 13px;
+  }
+
+  .file-icon { font-size: 20px; }
+
+  .owner-self { color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>💳 Credit <span>Tracker</span></h1>
+  <div class="badge">ttb · firstchoice · spaylater</div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('upload')">📤 อัปโหลดใบแจ้งหนี้</button>
+  <button class="tab" onclick="switchTab('income')">💰 รายรับ-รายจ่าย</button>
+  <button class="tab" onclick="switchTab('summary')">📊 สรุป</button>
+  <button class="tab" onclick="switchTab('settings')">⚙️ ตั้งค่า</button>
+</div>
+
+<!-- UPLOAD TAB -->
+<div id="tab-upload" class="section active">
+  <div class="month-selector">
+    <select id="sel-month" class="form-input" style="width:auto;">
+      <option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option>
+      <option value="3">มีนาคม</option><option value="4">เมษายน</option>
+      <option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option>
+      <option value="7">กรกฎาคม</option><option value="8">สิงหาคม</option>
+      <option value="9">กันยายน</option><option value="10">ตุลาคม</option>
+      <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
+    </select>
+    <select id="sel-year" class="form-input" style="width:auto;"></select>
+    <span style="color:var(--muted);font-size:13px;">รอบบิล</span>
+  </div>
+
+  <div class="section-title">เลือกบัตร</div>
+  <div class="card-select" id="card-select-container"></div>
+
+  <div class="section-title">อัปโหลดใบแจ้งหนี้</div>
+
+  <div style="display:flex;gap:8px;margin-bottom:16px;">
+    <button class="tab" id="mode-api" onclick="setMode('api')" style="flex:none;padding:7px 16px;border-radius:8px;font-size:13px;" class="active">🤖 วิเคราะห์อัตโนมัติ (API Key)</button>
+    <button class="tab" id="mode-manual" onclick="setMode('manual')" style="flex:none;padding:7px 16px;border-radius:8px;font-size:13px;">📋 ใช้ Claude.ai แล้ววาง JSON</button>
+  </div>
+
+  <div id="mode-api-section">
+    <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <div class="upload-icon">📄</div>
+      <p>ลาก PDF หรือรูปภาพมาวางที่นี่</p>
+      <p style="margin-top:6px;"><strong>คลิกเพื่อเลือกไฟล์</strong> · รองรับ PDF, JPG, PNG</p>
+      <input type="file" id="file-input" accept=".pdf,image/*" onchange="handleFile(event)">
+      <div id="file-preview"></div>
+    </div>
+    <div id="api-key-warn" style="display:none; padding:10px 14px; background:#2a1a0a; border:1px solid #4a2a0a; border-radius:8px; color:var(--orange); font-size:13px; margin-bottom:12px;">
+      ⚠️ กรุณาใส่ Anthropic API Key ในแท็บ ตั้งค่า ก่อนวิเคราะห์
+    </div>
+    <button class="analyze-btn" id="analyze-btn" onclick="analyzeStatement()" disabled>
+      🔍 วิเคราะห์ใบแจ้งหนี้
+    </button>
+  </div>
+
+  <div id="mode-manual-section" style="display:none;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">1. Copy prompt นี้ไปใช้ใน Claude.ai พร้อม upload ใบแจ้งหนี้</div>
+      <div style="background:var(--surface2);border-radius:8px;padding:12px;font-size:12px;font-family:var(--mono);color:var(--text);line-height:1.6;margin-bottom:10px;" id="prompt-box">วิเคราะห์ใบแจ้งหนี้บัตรเครดิตนี้ ดึงรายการผ่อนชำระและค่าใช้จ่ายทั้งหมด<br>กฎ: รายการ "SC IPP PRINCIPLE XXXXXXXXX" และ "LOAN INSTALMENT INTEREST" ที่มีเลข reference เดียวกัน ให้รวมเป็น 1 รายการ (ต้นเงิน+ดอกเบี้ย) ไม่ต้องแสดงดอกเบี้ยแยก<br>ตอบเป็น JSON array เท่านั้น ไม่มี markdown:<br>[{"description":"ชื่อรายการ","amount_per_installment":1500,"current_installment":3,"total_installments":10,"total_amount":15000,"is_installment":true}]<br>ถ้าไม่ใช่รายการผ่อน ให้ is_installment=false, current_installment=1, total_installments=1<br>amount_per_installment คือยอดที่ต้องจ่ายเดือนนี้ รวมดอกเบี้ยแล้ว</div>
+      <button class="save-btn" onclick="copyPrompt()" id="copy-prompt-btn">📋 Copy Prompt</button>
+    </div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">2. วาง JSON ที่ได้จาก Claude.ai ที่นี่</div>
+    <textarea class="form-input" id="json-paste" rows="6" placeholder='[{"description":"iPhone 14","amount_per_installment":2500,...}]' style="font-family:var(--mono);font-size:12px;"></textarea>
+    <button class="analyze-btn" style="margin-top:10px;" onclick="parseJSON()">✓ โหลดรายการ</button>
+  </div>
+
+  <div id="loading-state" style="display:none;" class="loading">กำลังวิเคราะห์ใบแจ้งหนี้</div>
+
+  <div id="result-section" class="result-section" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div class="section-title" style="margin-bottom:0;">รายการที่พบ</div>
+      <button class="add-btn" id="group-btn" onclick="groupSelected()" style="display:none;border-color:var(--accent);color:var(--accent);">📦 รวมกลุ่มที่เลือก</button>
+    </div>
+    <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">แก้ชื่อ / ใส่เจ้าของ / tick เลือกหลายรายการแล้วกด "รวมกลุ่ม"</p>
+    <table class="result-table" id="items-table">
+      <thead>
+        <tr>
+          <th style="width:32px;"><input type="checkbox" id="check-all" onchange="toggleAll(this)"></th>
+          <th style="min-width:200px;">ชื่อรายการ</th>
+          <th>งวด</th>
+          <th>ยอด/งวด</th>
+          <th>เจ้าของ</th>
+        </tr>
+      </thead>
+      <tbody id="items-body"></tbody>
+    </table>
+    <div style="display:flex; gap:10px; margin-top:16px;flex-wrap:wrap;">
+      <button class="save-btn" onclick="saveToSheet()">💾 บันทึกลง Google Sheet</button>
+      <button class="save-btn" style="border-color:var(--muted); color:var(--muted);" onclick="clearResults()">✕ ล้าง</button>
+    </div>
+    <div id="save-status"></div>
+  </div>
+</div>
+
+<!-- INCOME TAB -->
+<div id="tab-income" class="section">
+  <div class="month-selector">
+    <select id="inc-month" class="form-input" style="width:auto;"></select>
+    <select id="inc-year" class="form-input" style="width:auto;"></select>
+  </div>
+
+  <div class="section-title">รายรับ</div>
+  <div class="input-row">
+    <input type="text" class="form-input" id="inc-desc" placeholder="รายการ (เช่น เงินเดือน)">
+    <input type="number" class="form-input" id="inc-amount" placeholder="จำนวนเงิน">
+    <button class="add-btn" onclick="addIncome()">+ เพิ่ม</button>
+  </div>
+  <div id="income-list"></div>
+
+  <hr class="divider">
+
+  <div class="section-title">รายจ่ายอื่นๆ (นอกจากบัตรเครดิต)</div>
+  <div class="input-row">
+    <input type="text" class="form-input" id="exp-desc" placeholder="รายการ (เช่น ค่าเช่า)">
+    <input type="number" class="form-input" id="exp-amount" placeholder="จำนวนเงิน">
+    <button class="add-btn" onclick="addExpense()">+ เพิ่ม</button>
+  </div>
+  <div id="expense-list"></div>
+
+  <hr class="divider">
+  <button class="save-btn" onclick="saveIncomeExpense()">💾 บันทึก</button>
+</div>
+
+<!-- SUMMARY TAB -->
+<div id="tab-summary" class="section">
+  <div class="month-selector">
+    <select id="sum-month" class="form-input" style="width:auto;"></select>
+    <select id="sum-year" class="form-input" style="width:auto;"></select>
+    <button class="add-btn" onclick="loadSummary()">โหลดสรุป</button>
+  </div>
+
+  <div id="summary-content">
+    <div class="summary-grid">
+      <div class="metric-card">
+        <div class="metric-label">รายรับทั้งหมด</div>
+        <div class="metric-value income" id="total-income">฿0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">รายจ่ายอื่นๆ</div>
+        <div class="metric-value expense" id="total-expense">฿0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">ยอดบัตรเครดิตทั้งหมด</div>
+        <div class="metric-value cc" id="total-cc">฿0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">ยอดที่ตัวเองต้องจ่ายจริง</div>
+        <div class="metric-value cc" id="self-cc">฿0</div>
+      </div>
+      <div class="metric-card" style="grid-column: span 2;">
+        <div class="metric-label">คงเหลือ (หลังหักทุกอย่าง)</div>
+        <div class="metric-value net" id="net-balance">฿0</div>
+      </div>
+    </div>
+
+    <div class="section-title">ยอดที่ต้องเก็บจากแต่ละคน</div>
+    <div class="debtor-grid" id="debtor-grid">
+      <div style="color:var(--muted);font-size:13px;padding:16px;">กด "โหลดสรุป" เพื่อดูข้อมูล</div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section-title">รายละเอียดบัตร</div>
+    <div id="card-breakdown"></div>
+  </div>
+</div>
+
+<!-- SETTINGS TAB -->
+<div id="tab-settings" class="section">
+  <div class="config-section">
+    <div class="section-title">Anthropic API Key</div>
+    <div class="config-label">ใช้สำหรับวิเคราะห์ใบแจ้งหนี้อัตโนมัติ</div>
+    <input type="password" class="form-input" id="api-key-input" placeholder="sk-ant-..." style="margin-bottom:8px;">
+    <button class="save-btn" onclick="saveApiKey()">บันทึก API Key</button>
+    <div id="api-key-status"></div>
+  </div>
+
+  <div class="config-section">
+    <div class="section-title">Google Sheet</div>
+    <div class="config-label">Sheet ID (จาก URL ของ Google Sheet)</div>
+    <input type="text" class="form-input" id="sheet-id-input" placeholder="1rky_XTX..." style="margin-bottom:12px;">
+
+    <div class="config-label">Service Account JSON Key</div>
+    <textarea class="form-input" id="service-account-input" rows="5" placeholder='{"type":"service_account","project_id":...}'></textarea>
+    <button class="save-btn" style="margin-top:8px;" onclick="saveSheetConfig()">บันทึกการตั้งค่า Sheet</button>
+    <div id="sheet-status"></div>
+  </div>
+
+  <div class="config-section">
+    <div class="section-title">จัดการบัตรเครดิต</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">เพิ่ม ลบ หรือแก้ไขบัตรได้ตามต้องการ บัตรที่เพิ่มจะแสดงในหน้าอัปโหลดอัตโนมัติ</p>
+    <div id="card-list-settings"></div>
+    <div class="input-row" style="margin-top:12px;">
+      <input type="text" class="form-input" id="new-card-name" placeholder="ชื่อบัตร (เช่น KBank Platinum)">
+      <input type="text" class="form-input" id="new-card-bank" placeholder="ธนาคาร (เช่น kbank)">
+      <button class="add-btn" onclick="addCard()">+ เพิ่มบัตร</button>
+    </div>
+    <div id="card-settings-status"></div>
+  </div>
+</div>
+
+<script>
+const MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+let currentFile = null;
+let currentCard = null;
+let analyzedItems = [];
+let incomeList = [];
+let expenseList = [];
+
+const DEFAULT_CARDS = [
+  { id: 'ttb', name: 'TTB', bank: 'ttb bank' },
+  { id: 'firstchoice', name: 'First Choice', bank: 'krungsri firstchoice' },
+  { id: 'spaylater', name: 'SPayLater', bank: 'shopee pay later' }
+];
+
+function getCards() {
+  const saved = localStorage.getItem('cards_config');
+  return saved ? JSON.parse(saved) : DEFAULT_CARDS;
+}
+
+function saveCards(cards) {
+  localStorage.setItem('cards_config', JSON.stringify(cards));
+}
+
+function renderCardButtons() {
+  const cards = getCards();
+  const container = document.getElementById('card-select-container');
+  container.innerHTML = cards.map((card, i) => `
+    <button class="card-btn ${i===0 && !currentCard ? 'selected':''}" 
+      onclick="selectCard(this,'${card.id}')" data-card="${card.id}"
+      style="border-left: 3px solid ${cardColor(card.id)};">
+      <div class="card-name">${card.name}</div>
+      <div class="card-bank">${card.bank}</div>
+    </button>
+  `).join('');
+  if (!currentCard && cards.length > 0) currentCard = cards[0].id;
+}
+
+function renderCardSettings() {
+  const cards = getCards();
+  document.getElementById('card-list-settings').innerHTML = cards.map((card, i) => `
+    <div class="list-item">
+      <span style="display:flex;align-items:center;gap:10px;">
+        <span style="width:10px;height:10px;border-radius:50%;background:${cardColor(card.id)};display:inline-block;"></span>
+        <strong>${card.name}</strong>
+        <span style="color:var(--muted);font-size:12px;font-family:var(--mono);">${card.bank}</span>
+      </span>
+      <button class="del-btn" onclick="removeCard('${card.id}')" style="color:var(--red);">✕</button>
+    </div>
+  `).join('') || '<div style="color:var(--muted);font-size:13px;padding:12px;">ยังไม่มีบัตร</div>';
+}
+
+function cardColor(id) {
+  const colors = { ttb:'#0066cc', firstchoice:'#ff6600', spaylater:'#6366f1' };
+  const hash = id.split('').reduce((a,c) => a + c.charCodeAt(0), 0);
+  const palette = ['#e879f9','#22d3ee','#f59e0b','#34d399','#f87171','#a78bfa'];
+  return colors[id] || palette[hash % palette.length];
+}
+
+function addCard() {
+  const name = document.getElementById('new-card-name').value.trim();
+  const bank = document.getElementById('new-card-bank').value.trim();
+  if (!name) { alert('กรุณาใส่ชื่อบัตร'); return; }
+  const cards = getCards();
+  const id = name.toLowerCase().replace(/\s+/g,'_') + '_' + Date.now();
+  cards.push({ id, name, bank: bank || name });
+  saveCards(cards);
+  document.getElementById('new-card-name').value = '';
+  document.getElementById('new-card-bank').value = '';
+  renderCardButtons();
+  renderCardSettings();
+  document.getElementById('card-settings-status').innerHTML = '<div class="gs-status ok">✓ เพิ่มบัตร ' + name + ' แล้ว</div>';
+  setTimeout(() => document.getElementById('card-settings-status').innerHTML = '', 2000);
+  updateHeaderBadge();
+}
+
+function removeCard(id) {
+  const cards = getCards().filter(c => c.id !== id);
+  saveCards(cards);
+  if (currentCard === id) currentCard = cards[0]?.id || null;
+  renderCardButtons();
+  renderCardSettings();
+  updateHeaderBadge();
+}
+
+function updateHeaderBadge() {
+  const cards = getCards();
+  document.querySelector('.badge').textContent = cards.map(c => c.name.toLowerCase()).join(' · ');
+}
+
+function initSelectors() {
+  const now = new Date();
+  const yr = now.getFullYear();
+  const mo = now.getMonth() + 1;
+  ['sel-month','inc-month','sum-month'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = MONTHS.map((m,i) => `<option value="${i+1}" ${i+1===mo?'selected':''}>${m}</option>`).join('');
+  });
+  ['sel-year','inc-year','sum-year'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = [yr-1,yr,yr+1].map(y => `<option value="${y}" ${y===yr?'selected':''}>${y}</option>`).join('');
+  });
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function setMode(mode) {
+  document.getElementById('mode-api-section').style.display = mode === 'api' ? 'block' : 'none';
+  document.getElementById('mode-manual-section').style.display = mode === 'manual' ? 'block' : 'none';
+  document.getElementById('mode-api').style.background = mode === 'api' ? 'var(--accent)' : 'transparent';
+  document.getElementById('mode-api').style.color = mode === 'api' ? '#000' : 'var(--muted)';
+  document.getElementById('mode-manual').style.background = mode === 'manual' ? 'var(--accent)' : 'transparent';
+  document.getElementById('mode-manual').style.color = mode === 'manual' ? '#000' : 'var(--muted)';
+}
+
+function copyPrompt() {
+  const text = `วิเคราะห์ใบแจ้งหนี้บัตรเครดิตนี้ ดึงรายการผ่อนชำระและค่าใช้จ่ายทั้งหมด\nกฎ: รายการ "SC IPP PRINCIPLE XXXXXXXXX" และ "LOAN INSTALMENT INTEREST" ที่มีเลข reference เดียวกัน ให้รวมเป็น 1 รายการ (ต้นเงิน+ดอกเบี้ย) ไม่ต้องแสดงดอกเบี้ยแยก\nตอบเป็น JSON array เท่านั้น ไม่มี markdown:\n[{"description":"ชื่อรายการ","amount_per_installment":1500,"current_installment":3,"total_installments":10,"total_amount":15000,"is_installment":true}]\nถ้าไม่ใช่รายการผ่อน ให้ is_installment=false, current_installment=1, total_installments=1\namount_per_installment คือยอดที่ต้องจ่ายเดือนนี้ รวมดอกเบี้ยแล้ว`;
+  navigator.clipboard.writeText(text).then(() => {
+    document.getElementById('copy-prompt-btn').textContent = '✓ Copied!';
+    setTimeout(() => document.getElementById('copy-prompt-btn').textContent = '📋 Copy Prompt', 2000);
+  });
+}
+
+function parseJSON() {
+  const raw = document.getElementById('json-paste').value.trim();
+  try {
+    const clean = raw.replace(/```json|```/g,'').trim();
+    analyzedItems = JSON.parse(clean);
+    if (!Array.isArray(analyzedItems)) throw new Error('ต้องเป็น array');
+    renderResults();
+    document.getElementById('json-paste').value = '';
+  } catch(e) {
+    alert('JSON ไม่ถูกต้อง: ' + e.message);
+  }
+}
+
+function selectCard(el, card) {
+  document.querySelectorAll('.card-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  currentCard = card;
+}
+
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  currentFile = file;
+  const preview = document.getElementById('file-preview');
+  const apiKey = localStorage.getItem('anthropic_api_key');
+  if (!apiKey) {
+    document.getElementById('api-key-warn').style.display = 'block';
+  }
+  if (file.type.startsWith('image/')) {
+    const url = URL.createObjectURL(file);
+    preview.innerHTML = `<img src="${url}" class="preview-img">`;
+  } else {
+    preview.innerHTML = `<div class="file-info"><span class="file-icon">📄</span><span>${file.name}</span><span style="color:var(--muted);margin-left:auto;">${(file.size/1024).toFixed(0)} KB</span></div>`;
+  }
+  document.getElementById('analyze-btn').disabled = false;
+}
+
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) { currentFile = file; handleFile({target:{files:[file]}}); }
+});
+
+async function analyzeStatement() {
+  const apiKey = localStorage.getItem('anthropic_api_key');
+  if (!apiKey) { document.getElementById('api-key-warn').style.display = 'block'; return; }
+  if (!currentFile) return;
+
+  document.getElementById('loading-state').style.display = 'block';
+  document.getElementById('result-section').style.display = 'none';
+  document.getElementById('analyze-btn').disabled = true;
+
+  try {
+    const base64 = await fileToBase64(currentFile);
+    const isImage = currentFile.type.startsWith('image/');
+    const mediaType = isImage ? currentFile.type : 'application/pdf';
+
+    const prompt = `วิเคราะห์ใบแจ้งหนี้บัตรเครดิต ${currentCard.toUpperCase()} นี้
+ดึงรายการที่เป็นการผ่อนชำระทั้งหมด และรายการค่าใช้จ่ายหลัก
+
+กฎสำคัญ:
+- รายการ "SC IPP PRINCIPLE XXXXXXXXX" และ "LOAN INSTALMENT INTEREST" หรือ "Installment Interest" ที่มีเลข reference เดียวกัน ให้รวมเป็น 1 รายการ โดย amount_per_installment = ต้นเงิน + ดอกเบี้ย
+- ใช้ชื่อรายการจาก SC IPP PRINCIPLE หรือชื่อร้านค้าจริงเป็นหลัก ไม่ใช่ชื่อ "LOAN INSTALMENT INTEREST"
+- รายการดอกเบี้ยที่รวมแล้ว ไม่ต้องแสดงแยก
+- รายการอื่นที่ไม่ใช่ดอกเบี้ยให้คงไว้ตามปกติ
+
+ตอบเป็น JSON array เท่านั้น ไม่มี markdown หรือข้อความอื่น:
+[
+  {
+    "description": "ชื่อรายการ",
+    "amount_per_installment": 1500,
+    "current_installment": 3,
+    "total_installments": 10,
+    "total_amount": 15000,
+    "is_installment": true
+  }
+]
+ถ้าไม่ใช่รายการผ่อน ให้ is_installment = false และ current_installment = 1, total_installments = 1
+amount_per_installment คือยอดที่ต้องจ่ายเดือนนี้ (รวมดอกเบี้ยแล้ว)`;
+
+    const body = {
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: isImage ? 'image' : 'document',
+            source: { type: 'base64', media_type: mediaType, data: base64 } },
+          { type: 'text', text: prompt }
+        ]
+      }]
+    };
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+    const text = data.content?.map(c => c.text || '').join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    analyzedItems = JSON.parse(clean);
+    renderResults();
+  } catch (err) {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('analyze-btn').disabled = false;
+    alert('เกิดข้อผิดพลาด: ' + err.message);
+  }
+}
+
+function getRefMemory() {
+  return JSON.parse(localStorage.getItem('ref_memory') || '{}');
+}
+
+function saveRefMemory(memory) {
+  localStorage.setItem('ref_memory', JSON.stringify(memory));
+}
+
+function extractRef(description) {
+  const match = description.match(/\b(\d{8,})\b/);
+  return match ? match[1] : null;
+}
+
+function applyRefMemory(items) {
+  const memory = getRefMemory();
+  return items.map(item => {
+    const ref = extractRef(item.description);
+    if (ref && memory[ref]) {
+      return { ...item, description: memory[ref].name, owner: memory[ref].owner || item.owner, _ref: ref, _autoFilled: true };
+    }
+    if (ref) return { ...item, _ref: ref };
+    return item;
+  });
+}
+
+function updateRefMemoryFromItems() {
+  const memory = getRefMemory();
+  analyzedItems.forEach(item => {
+    if (item._ref) {
+      memory[item._ref] = { name: item.description, owner: item.owner || null };
+    }
+  });
+  saveRefMemory(memory);
+}
+
+function renderResults() {
+  document.getElementById('loading-state').style.display = 'none';
+  document.getElementById('result-section').style.display = 'block';
+  document.getElementById('analyze-btn').disabled = false;
+  document.getElementById('check-all').checked = false;
+
+  analyzedItems = applyRefMemory(analyzedItems);
+
+  const tbody = document.getElementById('items-body');
+  tbody.innerHTML = analyzedItems.map((item, i) => {
+    if (item._grouped) {
+      return `<tr style="background:var(--surface2);">
+        <td><input type="checkbox" class="row-check" data-i="${i}" onchange="onCheckChange()"></td>
+        <td colspan="3">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;background:#1a2a1a;color:var(--green);border:1px solid #2a4a2a;border-radius:4px;padding:2px 8px;">กลุ่ม</span>
+            <input type="text" class="owner-input" style="width:180px;" value="${item.description}"
+              oninput="updateDesc(${i}, this.value)" placeholder="ชื่อกลุ่ม">
+            <span style="font-size:12px;color:var(--muted);">${item._items.length} รายการ</span>
+            <button onclick="ungroup(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:2px 6px;border-radius:4px;" title="ยกเลิกกลุ่ม">↩ แยก</button>
+          </div>
+        </td>
+        <td><span class="amount" style="color:var(--orange);">฿${item.amount_per_installment.toLocaleString()}</span></td>
+        <td><input type="text" class="owner-input" id="owner-${i}" value="${item.owner||''}" placeholder="ตัวเอง" oninput="updateOwner(${i}, this.value)"></td>
+      </tr>`;
+    }
+    const autoTag = item._autoFilled
+      ? `<span style="font-size:10px;background:#0a1a2a;color:var(--blue);border:1px solid #0a2a4a;border-radius:4px;padding:1px 6px;margin-left:4px;" title="ใช้ชื่อจากรอบก่อน">💾 จำได้</span>`
+      : (item._ref ? `<span style="font-size:10px;color:var(--muted);margin-left:4px;">#${item._ref}</span>` : '');
+    return `<tr>
+      <td><input type="checkbox" class="row-check" data-i="${i}" onchange="onCheckChange()"></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+          <input type="text" class="owner-input" style="width:100%;min-width:200px;" value="${item.description}"
+            oninput="updateDesc(${i}, this.value)" placeholder="ชื่อรายการ">
+          ${autoTag}
+        </div>
+      </td>
+      <td>${item.is_installment
+        ? `<span class="installment-badge">${item.current_installment}/${item.total_installments}</span>`
+        : `<span style="color:var(--muted);font-size:12px;">ครั้งเดียว</span>`}</td>
+      <td><span class="amount">฿${item.amount_per_installment.toLocaleString()}</span></td>
+      <td><input type="text" class="owner-input" id="owner-${i}" value="${item.owner||''}" placeholder="ตัวเอง" oninput="updateOwner(${i}, this.value)"></td>
+    </tr>`;
+  }).join('');
+}
+
+function updateDesc(i, val) {
+  analyzedItems[i].description = val;
+  if (analyzedItems[i]._ref) {
+    const memory = getRefMemory();
+    if (!memory[analyzedItems[i]._ref]) memory[analyzedItems[i]._ref] = {};
+    memory[analyzedItems[i]._ref].name = val;
+    saveRefMemory(memory);
+  }
+}
+
+function updateOwner(i, val) {
+  analyzedItems[i].owner = val || null;
+  if (analyzedItems[i]._ref) {
+    const memory = getRefMemory();
+    if (!memory[analyzedItems[i]._ref]) memory[analyzedItems[i]._ref] = {};
+    memory[analyzedItems[i]._ref].owner = val || null;
+    saveRefMemory(memory);
+  }
+}
+
+function toggleAll(cb) {
+  document.querySelectorAll('.row-check').forEach(c => c.checked = cb.checked);
+  onCheckChange();
+}
+
+function onCheckChange() {
+  const checked = document.querySelectorAll('.row-check:checked').length;
+  document.getElementById('group-btn').style.display = checked >= 2 ? 'inline-block' : 'none';
+}
+
+function groupSelected() {
+  const indices = [...document.querySelectorAll('.row-check:checked')].map(c => parseInt(c.dataset.i));
+  if (indices.length < 2) return;
+  const name = prompt('ตั้งชื่อกลุ่ม:', analyzedItems[indices[0]].description) || 'กลุ่มใหม่';
+  const items = indices.map(i => analyzedItems[i]);
+  const total = items.reduce((s, it) => s + it.amount_per_installment, 0);
+  const grouped = {
+    description: name,
+    amount_per_installment: total,
+    current_installment: 1,
+    total_installments: 1,
+    is_installment: false,
+    owner: items[0].owner || null,
+    _grouped: true,
+    _items: items
+  };
+  const sorted = [...indices].sort((a,b) => b-a);
+  sorted.forEach(i => analyzedItems.splice(i, 1));
+  analyzedItems.splice(indices[0], 0, grouped);
+  document.getElementById('group-btn').style.display = 'none';
+  renderResults();
+}
+
+function ungroup(i) {
+  const item = analyzedItems[i];
+  if (!item._grouped) return;
+  analyzedItems.splice(i, 1, ...item._items);
+  renderResults();
+}
+
+function clearResults() {
+  analyzedItems = [];
+  currentFile = null;
+  document.getElementById('result-section').style.display = 'none';
+  document.getElementById('file-preview').innerHTML = '';
+  document.getElementById('file-input').value = '';
+  document.getElementById('analyze-btn').disabled = true;
+}
+
+async function saveToSheet() {
+  const sheetId = localStorage.getItem('sheet_id');
+  const saJson = localStorage.getItem('service_account');
+  if (!sheetId || !saJson) {
+    alert('กรุณาตั้งค่า Google Sheet ก่อน'); return;
+  }
+
+  const month = document.getElementById('sel-month').value;
+  const year = document.getElementById('sel-year').value;
+  const sheetName = `${MONTHS[month-1]} ${year}`;
+
+  const rows = analyzedItems.map(item => [
+    sheetName, currentCard.toUpperCase(), item.description,
+    item.amount_per_installment, item.current_installment || 1,
+    item.total_installments || 1, item.owner || 'ตัวเอง'
+  ]);
+
+  const status = document.getElementById('save-status');
+  status.innerHTML = '<div class="gs-status ok">กำลังบันทึก...</div>';
+
+  try {
+    await appendToSheet(sheetId, saJson, 'บัตรเครดิต', rows);
+    status.innerHTML = '<div class="gs-status ok">✓ บันทึกสำเร็จ ' + rows.length + ' รายการ</div>';
+    saveLocalData(month, year, sheetName);
+  } catch(e) {
+    status.innerHTML = `<div class="gs-status err">✕ ${e.message}</div>`;
+  }
+}
+
+function saveLocalData(month, year, sheetName) {
+  const key = `cc_${month}_${year}`;
+  const existing = JSON.parse(localStorage.getItem(key) || '[]');
+  const merged = [...existing.filter(e => e.card !== currentCard), ...analyzedItems.map(i => ({...i, card: currentCard}))];
+  localStorage.setItem(key, JSON.stringify(merged));
+  updateRefMemoryFromItems();
+}
+
+function addIncome() {
+  const desc = document.getElementById('inc-desc').value.trim();
+  const amount = parseFloat(document.getElementById('inc-amount').value);
+  if (!desc || isNaN(amount)) return;
+  incomeList.push({desc, amount});
+  renderLists();
+  document.getElementById('inc-desc').value = '';
+  document.getElementById('inc-amount').value = '';
+}
+
+function addExpense() {
+  const desc = document.getElementById('exp-desc').value.trim();
+  const amount = parseFloat(document.getElementById('exp-amount').value);
+  if (!desc || isNaN(amount)) return;
+  expenseList.push({desc, amount});
+  renderLists();
+  document.getElementById('exp-desc').value = '';
+  document.getElementById('exp-amount').value = '';
+}
+
+function renderLists() {
+  document.getElementById('income-list').innerHTML = incomeList.map((item,i) => `
+    <div class="list-item">
+      <span>${item.desc}</span>
+      <span style="display:flex;align-items:center;gap:12px;">
+        <span class="amount" style="color:var(--green);">+฿${item.amount.toLocaleString()}</span>
+        <button class="del-btn" onclick="removeIncome(${i})">✕</button>
+      </span>
+    </div>`).join('');
+
+  document.getElementById('expense-list').innerHTML = expenseList.map((item,i) => `
+    <div class="list-item">
+      <span>${item.desc}</span>
+      <span style="display:flex;align-items:center;gap:12px;">
+        <span class="amount" style="color:var(--red);">-฿${item.amount.toLocaleString()}</span>
+        <button class="del-btn" onclick="removeExpense(${i})">✕</button>
+      </span>
+    </div>`).join('');
+}
+
+function removeIncome(i) { incomeList.splice(i,1); renderLists(); }
+function removeExpense(i) { expenseList.splice(i,1); renderLists(); }
+
+function saveIncomeExpense() {
+  const month = document.getElementById('inc-month').value;
+  const year = document.getElementById('inc-year').value;
+  localStorage.setItem(`income_${month}_${year}`, JSON.stringify(incomeList));
+  localStorage.setItem(`expense_${month}_${year}`, JSON.stringify(expenseList));
+  alert('บันทึกแล้ว');
+}
+
+function loadSummary() {
+  const month = document.getElementById('sum-month').value;
+  const year = document.getElementById('sum-year').value;
+
+  const ccData = JSON.parse(localStorage.getItem(`cc_${month}_${year}`) || '[]');
+  const income = JSON.parse(localStorage.getItem(`income_${month}_${year}`) || '[]');
+  const expenses = JSON.parse(localStorage.getItem(`expense_${month}_${year}`) || '[]');
+
+  const totalIncome = income.reduce((s,i) => s+i.amount, 0);
+  const totalExpense = expenses.reduce((s,i) => s+i.amount, 0);
+  const totalCC = ccData.reduce((s,i) => s+i.amount_per_installment, 0);
+  const selfCC = ccData.filter(i => !i.owner || i.owner === 'ตัวเอง').reduce((s,i) => s+i.amount_per_installment, 0);
+  const net = totalIncome - totalExpense - selfCC;
+
+  document.getElementById('total-income').textContent = `฿${totalIncome.toLocaleString()}`;
+  document.getElementById('total-expense').textContent = `฿${totalExpense.toLocaleString()}`;
+  document.getElementById('total-cc').textContent = `฿${totalCC.toLocaleString()}`;
+  document.getElementById('self-cc').textContent = `฿${selfCC.toLocaleString()}`;
+
+  const netEl = document.getElementById('net-balance');
+  netEl.textContent = `฿${net.toLocaleString()}`;
+  netEl.className = 'metric-value net ' + (net >= 0 ? 'positive' : 'negative');
+
+  const debtors = {};
+  ccData.filter(i => i.owner && i.owner !== 'ตัวเอง').forEach(i => {
+    debtors[i.owner] = (debtors[i.owner] || 0) + i.amount_per_installment;
+  });
+
+  const debtorGrid = document.getElementById('debtor-grid');
+  if (Object.keys(debtors).length === 0) {
+    debtorGrid.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:16px;">ไม่มีรายการของคนอื่น</div>';
+  } else {
+    debtorGrid.innerHTML = Object.entries(debtors).map(([name, amt]) => `
+      <div class="debtor-card">
+        <div class="debtor-name">${name}</div>
+        <div class="debtor-amount">฿${amt.toLocaleString()}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">ต้องเก็บ</div>
+      </div>`).join('');
+  }
+
+  const cardBreakdown = document.getElementById('card-breakdown');
+  const cards = getCards();
+  cardBreakdown.innerHTML = cards.map(card => {
+    const items = ccData.filter(i => i.card === card.id.toUpperCase() || i.card === card.name.toUpperCase());
+    if (!items.length) return '';
+    const total = items.reduce((s,i) => s+i.amount_per_installment, 0);
+    return `<div style="margin-bottom:16px;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;font-family:var(--mono);">${card.name} · ฿${total.toLocaleString()}</div>
+      ${items.map(i => `<div class="list-item">
+        <span>${i.description} ${i.is_installment ? `<span class="installment-badge">${i.current_installment}/${i.total_installments}</span>` : ''}</span>
+        <span style="display:flex;gap:10px;align-items:center;">
+          <span class="amount">฿${i.amount_per_installment.toLocaleString()}</span>
+          <span class="${(!i.owner || i.owner==='ตัวเอง') ? 'tag self' : 'tag other'}">${i.owner || 'ตัวเอง'}</span>
+        </span>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+function saveApiKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key) return;
+  localStorage.setItem('anthropic_api_key', key);
+  document.getElementById('api-key-input').value = '***saved***';
+  document.getElementById('api-key-status').innerHTML = '<div class="gs-status ok">✓ บันทึก API Key แล้ว</div>';
+  document.getElementById('api-key-warn').style.display = 'none';
+}
+
+function saveSheetConfig() {
+  const sheetId = document.getElementById('sheet-id-input').value.trim();
+  const sa = document.getElementById('service-account-input').value.trim();
+  if (!sheetId || !sa) return;
+  try { JSON.parse(sa); } catch(e) { alert('Service Account JSON ไม่ถูกต้อง'); return; }
+  localStorage.setItem('sheet_id', sheetId);
+  localStorage.setItem('service_account', sa);
+  document.getElementById('sheet-status').innerHTML = '<div class="gs-status ok">✓ บันทึกการตั้งค่า Sheet แล้ว</div>';
+}
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(new Error('อ่านไฟล์ไม่ได้'));
+    r.readAsDataURL(file);
+  });
+}
+
+async function appendToSheet(sheetId, saJson, sheetName, rows) {
+  const sa = JSON.parse(saJson);
+  const token = await getAccessToken(sa);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(sheetName)}!A1:append?valueInputOption=USER_ENTERED`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values: rows })
+  });
+  if (!res.ok) throw new Error('Google Sheets API error: ' + res.status);
+}
+
+async function getAccessToken(sa) {
+  const header = btoa(JSON.stringify({alg:'RS256',typ:'JWT'}));
+  const now = Math.floor(Date.now()/1000);
+  const claim = btoa(JSON.stringify({
+    iss: sa.client_email, scope: 'https://www.googleapis.com/auth/spreadsheets',
+    aud: 'https://oauth2.googleapis.com/token', exp: now+3600, iat: now
+  }));
+  const unsigned = header+'.'+claim;
+  const key = await importKey(sa.private_key);
+  const sig = await sign(unsigned, key);
+  const jwt = unsigned+'.'+sig;
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: {'Content-Type':'application/x-www-form-urlencoded'},
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
+  });
+  const data = await res.json();
+  if (!data.access_token) throw new Error('ไม่สามารถขอ access token ได้');
+  return data.access_token;
+}
+
+async function importKey(pem) {
+  const pemContent = pem.replace(/-----.*-----/g,'').replace(/\s/g,'');
+  const keyData = Uint8Array.from(atob(pemContent), c => c.charCodeAt(0));
+  return await crypto.subtle.importKey('pkcs8', keyData, {name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'}, false, ['sign']);
+}
+
+async function sign(data, key) {
+  const enc = new TextEncoder();
+  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, enc.encode(data));
+  return btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+
+initSelectors();
+renderCardButtons();
+renderCardSettings();
+updateHeaderBadge();
+setMode('api');
+const savedKey = localStorage.getItem('anthropic_api_key');
+if (savedKey) { document.getElementById('api-key-input').value = '***saved***'; }
+const savedSheetId = localStorage.getItem('sheet_id');
+if (savedSheetId) document.getElementById('sheet-id-input').value = savedSheetId;
+const savedSa = localStorage.getItem('service_account');
+if (savedSa) document.getElementById('service-account-input').value = savedSa;
+</script>
+</body>
+</html>
