@@ -499,6 +499,7 @@
 
 <div class="tabs">
   <button class="tab active" onclick="switchTab('upload')">📤 อัปโหลดใบแจ้งหนี้</button>
+  <button class="tab" onclick="switchTab('items')">📋 รายการ</button>
   <button class="tab" onclick="switchTab('income')">💰 รายรับ-รายจ่าย</button>
   <button class="tab" onclick="switchTab('summary')">📊 สรุป</button>
   <button class="tab" onclick="switchTab('settings')">⚙️ ตั้งค่า</button>
@@ -507,7 +508,7 @@
 <!-- UPLOAD TAB -->
 <div id="tab-upload" class="section active">
   <div class="month-selector">
-    <select id="sel-month" class="form-input" style="width:auto;">
+    <select id="sel-month" class="form-input" style="width:auto;" onchange="loadMonthlyItems()">
       <option value="1">มกราคม</option><option value="2">กุมภาพันธ์</option>
       <option value="3">มีนาคม</option><option value="4">เมษายน</option>
       <option value="5">พฤษภาคม</option><option value="6">มิถุนายน</option>
@@ -515,7 +516,7 @@
       <option value="9">กันยายน</option><option value="10">ตุลาคม</option>
       <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
     </select>
-    <select id="sel-year" class="form-input" style="width:auto;"></select>
+    <select id="sel-year" class="form-input" style="width:auto;" onchange="loadMonthlyItems()"></select>
     <span style="color:var(--muted);font-size:13px;">รอบบิล</span>
   </div>
 
@@ -577,24 +578,40 @@
       <tbody id="items-body"></tbody>
     </table>
     <div style="display:flex; gap:10px; margin-top:16px;flex-wrap:wrap;">
-      <button class="save-btn" onclick="saveToSheet()">💾 บันทึกลง Google Sheet</button>
+      <button class="save-btn" onclick="saveLocal()">💾 บันทึก</button>
       <button class="save-btn" style="border-color:var(--muted); color:var(--muted);" onclick="clearResults()">✕ ล้าง</button>
     </div>
     <div id="save-status"></div>
   </div>
 </div>
 
+<!-- ITEMS TAB -->
+<div id="tab-items" class="section">
+  <div class="month-selector">
+    <select id="items-month" class="form-input" style="width:auto;" onchange="loadMonthlyItems()"></select>
+    <select id="items-year" class="form-input" style="width:auto;" onchange="loadMonthlyItems()"></select>
+    <span style="color:var(--muted);font-size:13px;">รอบบิล</span>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <div class="section-title" style="margin-bottom:0;">รายการที่บันทึกไว้ — <span id="monthly-label" style="color:var(--accent);"></span></div>
+    <button class="add-btn" onclick="saveMonthlyEdits()" style="border-color:var(--green);color:var(--green);">💾 บันทึกการแก้ไข</button>
+  </div>
+  <div id="monthly-items-body"><div style="color:var(--muted);font-size:13px;padding:20px;">เลือกเดือนเพื่อดูรายการ</div></div>
+  <div id="monthly-save-status"></div>
+</div>
+
 <!-- INCOME TAB -->
 <div id="tab-income" class="section">
   <div class="month-selector">
-    <select id="inc-month" class="form-input" style="width:auto;"></select>
-    <select id="inc-year" class="form-input" style="width:auto;"></select>
+    <select id="inc-month" class="form-input" style="width:auto;" onchange="loadIncomeExpense()"></select>
+    <select id="inc-year" class="form-input" style="width:auto;" onchange="loadIncomeExpense()"></select>
   </div>
 
   <div class="section-title">รายรับ</div>
-  <div class="input-row">
+  <div class="input-row" style="grid-template-columns:1fr 1fr 1fr auto;">
     <input type="text" class="form-input" id="inc-desc" placeholder="รายการ (เช่น เงินเดือน)">
     <input type="number" class="form-input" id="inc-amount" placeholder="จำนวนเงิน">
+    <input type="text" class="form-input" id="inc-name" placeholder="ชื่อเจ้าของ (ไม่บังคับ)">
     <button class="add-btn" onclick="addIncome()">+ เพิ่ม</button>
   </div>
   <div id="income-list"></div>
@@ -602,15 +619,17 @@
   <hr class="divider">
 
   <div class="section-title">รายจ่ายอื่นๆ (นอกจากบัตรเครดิต)</div>
-  <div class="input-row">
+  <div class="input-row" style="grid-template-columns:1fr 1fr 1fr auto;">
     <input type="text" class="form-input" id="exp-desc" placeholder="รายการ (เช่น ค่าเช่า)">
     <input type="number" class="form-input" id="exp-amount" placeholder="จำนวนเงิน">
+    <input type="text" class="form-input" id="exp-name" placeholder="ชื่อเจ้าของ (ไม่บังคับ)">
     <button class="add-btn" onclick="addExpense()">+ เพิ่ม</button>
   </div>
   <div id="expense-list"></div>
 
   <hr class="divider">
   <button class="save-btn" onclick="saveIncomeExpense()">💾 บันทึก</button>
+  <div id="inc-save-status"></div>
 </div>
 
 <!-- SUMMARY TAB -->
@@ -665,17 +684,6 @@
     <input type="password" class="form-input" id="api-key-input" placeholder="sk-ant-..." style="margin-bottom:8px;">
     <button class="save-btn" onclick="saveApiKey()">บันทึก API Key</button>
     <div id="api-key-status"></div>
-  </div>
-
-  <div class="config-section">
-    <div class="section-title">Google Sheet</div>
-    <div class="config-label">Sheet ID (จาก URL ของ Google Sheet)</div>
-    <input type="text" class="form-input" id="sheet-id-input" placeholder="1rky_XTX..." style="margin-bottom:12px;">
-
-    <div class="config-label">Service Account JSON Key</div>
-    <textarea class="form-input" id="service-account-input" rows="5" placeholder='{"type":"service_account","project_id":...}'></textarea>
-    <button class="save-btn" style="margin-top:8px;" onclick="saveSheetConfig()">บันทึกการตั้งค่า Sheet</button>
-    <div id="sheet-status"></div>
   </div>
 
   <div class="config-section">
@@ -785,12 +793,12 @@ function initSelectors() {
   const now = new Date();
   const yr = now.getFullYear();
   const mo = now.getMonth() + 1;
-  ['sel-month','inc-month','sum-month'].forEach(id => {
+  ['sel-month','inc-month','sum-month','items-month'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.innerHTML = MONTHS.map((m,i) => `<option value="${i+1}" ${i+1===mo?'selected':''}>${m}</option>`).join('');
   });
-  ['sel-year','inc-year','sum-year'].forEach(id => {
+  ['sel-year','inc-year','sum-year','items-year'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     el.innerHTML = [yr-1,yr,yr+1].map(y => `<option value="${y}" ${y===yr?'selected':''}>${y}</option>`).join('');
@@ -802,6 +810,8 @@ function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   event.target.classList.add('active');
+  if (tab === 'items') loadMonthlyItems();
+  if (tab === 'income') loadIncomeExpense();
 }
 
 function setMode(mode) {
@@ -944,7 +954,6 @@ function saveRefMemory(memory) {
 }
 
 function extractRef(description) {
-  if (!description || typeof description !== 'string') return null;
   const match = description.match(/\b(\d{8,})\b/);
   return match ? match[1] : null;
 }
@@ -952,7 +961,6 @@ function extractRef(description) {
 function applyRefMemory(items) {
   const memory = getRefMemory();
   return items.map(item => {
-    if (item._grouped) return item;
     const ref = extractRef(item.description);
     if (ref && memory[ref]) {
       return { ...item, description: memory[ref].name, owner: memory[ref].owner || item.owner, _ref: ref, _autoFilled: true };
@@ -1065,11 +1073,9 @@ function groupSelected() {
     _grouped: true,
     _items: items
   };
-  const insertAt = Math.min(...indices);
   const sorted = [...indices].sort((a,b) => b-a);
   sorted.forEach(i => analyzedItems.splice(i, 1));
-  const adjustedInsert = sorted.reduce((pos, i) => i < insertAt ? pos - 1 : pos, insertAt);
-  analyzedItems.splice(adjustedInsert, 0, grouped);
+  analyzedItems.splice(indices[0], 0, grouped);
   document.getElementById('group-btn').style.display = 'none';
   renderResults();
 }
@@ -1090,67 +1096,55 @@ function clearResults() {
   document.getElementById('analyze-btn').disabled = true;
 }
 
-async function saveToSheet() {
-  const sheetId = localStorage.getItem('sheet_id');
-  const saJson = localStorage.getItem('service_account');
-  if (!sheetId || !saJson) {
-    alert('กรุณาตั้งค่า Google Sheet ก่อน'); return;
-  }
-
+function saveLocal() {
   const month = document.getElementById('sel-month').value;
   const year = document.getElementById('sel-year').value;
-  const sheetName = `${MONTHS[month-1]} ${year}`;
-
-  const rows = analyzedItems.map(item => [
-    sheetName, currentCard.toUpperCase(), item.description,
-    item.amount_per_installment, item.current_installment || 1,
-    item.total_installments || 1, item.owner || 'ตัวเอง'
-  ]);
-
   const status = document.getElementById('save-status');
-  status.innerHTML = '<div class="gs-status ok">กำลังบันทึก...</div>';
-
   try {
-    await appendToSheet(sheetId, saJson, 'บัตรเครดิต', rows);
-    status.innerHTML = '<div class="gs-status ok">✓ บันทึกสำเร็จ ' + rows.length + ' รายการ</div>';
-    saveLocalData(month, year, sheetName);
+    const key = `cc_${month}_${year}`;
+    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+    const merged = [...existing.filter(e => e.card !== currentCard), ...analyzedItems.map(i => ({...i, card: currentCard}))];
+    localStorage.setItem(key, JSON.stringify(merged));
+    updateRefMemoryFromItems();
+    status.innerHTML = '<div class="gs-status ok">✓ บันทึกสำเร็จ ' + analyzedItems.length + ' รายการ</div>';
+    setTimeout(() => status.innerHTML = '', 3000);
+    loadMonthlyItems();
   } catch(e) {
     status.innerHTML = `<div class="gs-status err">✕ ${e.message}</div>`;
   }
 }
 
-function saveLocalData(month, year, sheetName) {
-  const key = `cc_${month}_${year}`;
-  const existing = JSON.parse(localStorage.getItem(key) || '[]');
-  const merged = [...existing.filter(e => e.card !== currentCard), ...analyzedItems.map(i => ({...i, card: currentCard}))];
-  localStorage.setItem(key, JSON.stringify(merged));
-  updateRefMemoryFromItems();
-}
-
 function addIncome() {
   const desc = document.getElementById('inc-desc').value.trim();
   const amount = parseFloat(document.getElementById('inc-amount').value);
+  const name = document.getElementById('inc-name').value.trim();
   if (!desc || isNaN(amount)) return;
-  incomeList.push({desc, amount});
+  incomeList.push({desc, amount, name});
   renderLists();
   document.getElementById('inc-desc').value = '';
   document.getElementById('inc-amount').value = '';
+  document.getElementById('inc-name').value = '';
 }
 
 function addExpense() {
   const desc = document.getElementById('exp-desc').value.trim();
   const amount = parseFloat(document.getElementById('exp-amount').value);
+  const name = document.getElementById('exp-name').value.trim();
   if (!desc || isNaN(amount)) return;
-  expenseList.push({desc, amount});
+  expenseList.push({desc, amount, name});
   renderLists();
   document.getElementById('exp-desc').value = '';
   document.getElementById('exp-amount').value = '';
+  document.getElementById('exp-name').value = '';
 }
 
 function renderLists() {
   document.getElementById('income-list').innerHTML = incomeList.map((item,i) => `
     <div class="list-item">
-      <span>${item.desc}</span>
+      <span style="display:flex;align-items:center;gap:8px;">
+        <span>${item.desc}</span>
+        ${item.name ? `<span class="tag other">${item.name}</span>` : ''}
+      </span>
       <span style="display:flex;align-items:center;gap:12px;">
         <span class="amount" style="color:var(--green);">+฿${item.amount.toLocaleString()}</span>
         <button class="del-btn" onclick="removeIncome(${i})">✕</button>
@@ -1159,7 +1153,10 @@ function renderLists() {
 
   document.getElementById('expense-list').innerHTML = expenseList.map((item,i) => `
     <div class="list-item">
-      <span>${item.desc}</span>
+      <span style="display:flex;align-items:center;gap:8px;">
+        <span>${item.desc}</span>
+        ${item.name ? `<span class="tag other">${item.name}</span>` : ''}
+      </span>
       <span style="display:flex;align-items:center;gap:12px;">
         <span class="amount" style="color:var(--red);">-฿${item.amount.toLocaleString()}</span>
         <button class="del-btn" onclick="removeExpense(${i})">✕</button>
@@ -1170,12 +1167,23 @@ function renderLists() {
 function removeIncome(i) { incomeList.splice(i,1); renderLists(); }
 function removeExpense(i) { expenseList.splice(i,1); renderLists(); }
 
+function loadIncomeExpense() {
+  const month = document.getElementById('inc-month').value;
+  const year = document.getElementById('inc-year').value;
+  if (!month || !year) return;
+  incomeList = JSON.parse(localStorage.getItem(`income_${month}_${year}`) || '[]');
+  expenseList = JSON.parse(localStorage.getItem(`expense_${month}_${year}`) || '[]');
+  renderLists();
+}
+
 function saveIncomeExpense() {
   const month = document.getElementById('inc-month').value;
   const year = document.getElementById('inc-year').value;
   localStorage.setItem(`income_${month}_${year}`, JSON.stringify(incomeList));
   localStorage.setItem(`expense_${month}_${year}`, JSON.stringify(expenseList));
-  alert('บันทึกแล้ว');
+  const st = document.getElementById('inc-save-status');
+  st.innerHTML = '<div class="gs-status ok">✓ บันทึกแล้ว</div>';
+  setTimeout(() => st.innerHTML = '', 2000);
 }
 
 function loadSummary() {
@@ -1246,15 +1254,7 @@ function saveApiKey() {
   document.getElementById('api-key-warn').style.display = 'none';
 }
 
-function saveSheetConfig() {
-  const sheetId = document.getElementById('sheet-id-input').value.trim();
-  const sa = document.getElementById('service-account-input').value.trim();
-  if (!sheetId || !sa) return;
-  try { JSON.parse(sa); } catch(e) { alert('Service Account JSON ไม่ถูกต้อง'); return; }
-  localStorage.setItem('sheet_id', sheetId);
-  localStorage.setItem('service_account', sa);
-  document.getElementById('sheet-status').innerHTML = '<div class="gs-status ok">✓ บันทึกการตั้งค่า Sheet แล้ว</div>';
-}
+function saveSheetConfig() {}
 
 function fileToBase64(file) {
   return new Promise((res, rej) => {
@@ -1265,49 +1265,71 @@ function fileToBase64(file) {
   });
 }
 
-async function appendToSheet(sheetId, saJson, sheetName, rows) {
-  const sa = JSON.parse(saJson);
-  const token = await getAccessToken(sa);
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(sheetName)}!A1:append?valueInputOption=USER_ENTERED`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ values: rows })
-  });
-  if (!res.ok) throw new Error('Google Sheets API error: ' + res.status);
+function loadMonthlyItems() {
+  const month = document.getElementById('items-month')?.value || document.getElementById('sel-month').value;
+  const year = document.getElementById('items-year')?.value || document.getElementById('sel-year').value;
+  if (!month || !year) return;
+  const key = `cc_${month}_${year}`;
+  const items = JSON.parse(localStorage.getItem(key) || '[]');
+  const label = document.getElementById('monthly-label');
+  if (label) label.textContent = `${MONTHS[month-1]} ${year}`;
+  const body = document.getElementById('monthly-items-body');
+  if (items.length === 0) {
+    if (body) body.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px;">ยังไม่มีรายการที่บันทึกไว้สำหรับเดือนนี้</div>';
+    return;
+  }
+  renderMonthlyItems(items, month, year);
 }
 
-async function getAccessToken(sa) {
-  const header = btoa(JSON.stringify({alg:'RS256',typ:'JWT'}));
-  const now = Math.floor(Date.now()/1000);
-  const claim = btoa(JSON.stringify({
-    iss: sa.client_email, scope: 'https://www.googleapis.com/auth/spreadsheets',
-    aud: 'https://oauth2.googleapis.com/token', exp: now+3600, iat: now
-  }));
-  const unsigned = header+'.'+claim;
-  const key = await importKey(sa.private_key);
-  const sig = await sign(unsigned, key);
-  const jwt = unsigned+'.'+sig;
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: {'Content-Type':'application/x-www-form-urlencoded'},
-    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
-  });
-  const data = await res.json();
-  if (!data.access_token) throw new Error('ไม่สามารถขอ access token ได้');
-  return data.access_token;
+function renderMonthlyItems(items, month, year) {
+  if (!month) month = document.getElementById('items-month')?.value || document.getElementById('sel-month').value;
+  if (!year) year = document.getElementById('items-year')?.value || document.getElementById('sel-year').value;
+  const cards = [...new Set(items.map(i => i.card))];
+  const body = document.getElementById('monthly-items-body');
+  body.innerHTML = cards.map(card => {
+    const cardItems = items.filter(i => i.card === card);
+    const total = cardItems.reduce((s,i) => s + i.amount_per_installment, 0);
+    return `<div style="margin-bottom:20px;">
+      <div style="font-size:12px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;margin-bottom:8px;">${card} · ฿${total.toLocaleString()}</div>
+      ${cardItems.map((item) => {
+        const globalIdx = items.indexOf(item);
+        return `<div class="list-item" style="gap:8px;flex-wrap:wrap;">
+          <input type="text" class="owner-input" style="min-width:160px;flex:1;" value="${item.description}"
+            oninput="updateMonthlyItem(${globalIdx},'description',this.value,'${month}','${year}')">
+          ${item.is_installment ? `<span class="installment-badge">${item.current_installment}/${item.total_installments}</span>` : ''}
+          <span class="amount">฿${item.amount_per_installment.toLocaleString()}</span>
+          <input type="text" class="owner-input" style="width:110px;" value="${item.owner||''}" placeholder="ตัวเอง"
+            oninput="updateMonthlyItem(${globalIdx},'owner',this.value,'${month}','${year}')">
+          <button class="del-btn" onclick="deleteMonthlyItem(${globalIdx},'${month}','${year}')" style="color:var(--red);">✕</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
 }
 
-async function importKey(pem) {
-  const pemContent = pem.replace(/-----.*-----/g,'').replace(/\s/g,'');
-  const keyData = Uint8Array.from(atob(pemContent), c => c.charCodeAt(0));
-  return await crypto.subtle.importKey('pkcs8', keyData, {name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'}, false, ['sign']);
+function updateMonthlyItem(idx, field, val, month, year) {
+  const key = `cc_${month}_${year}`;
+  const items = JSON.parse(localStorage.getItem(key) || '[]');
+  if (items[idx]) items[idx][field] = val;
+  localStorage.setItem(key, JSON.stringify(items));
 }
 
-async function sign(data, key) {
-  const enc = new TextEncoder();
-  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, enc.encode(data));
-  return btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+function deleteMonthlyItem(idx, month, year) {
+  const key = `cc_${month}_${year}`;
+  const items = JSON.parse(localStorage.getItem(key) || '[]');
+  items.splice(idx, 1);
+  localStorage.setItem(key, JSON.stringify(items));
+  if (items.length === 0) {
+    document.getElementById('monthly-items-body').innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px;">ยังไม่มีรายการที่บันทึกไว้สำหรับเดือนนี้</div>';
+  } else {
+    renderMonthlyItems(items, month, year);
+  }
+}
+
+function saveMonthlyEdits() {
+  const st = document.getElementById('monthly-save-status');
+  st.innerHTML = '<div class="gs-status ok">✓ บันทึกการแก้ไขแล้ว</div>';
+  setTimeout(() => st.innerHTML = '', 2000);
 }
 
 initSelectors();
@@ -1317,10 +1339,6 @@ updateHeaderBadge();
 setMode('api');
 const savedKey = localStorage.getItem('anthropic_api_key');
 if (savedKey) { document.getElementById('api-key-input').value = '***saved***'; }
-const savedSheetId = localStorage.getItem('sheet_id');
-if (savedSheetId) document.getElementById('sheet-id-input').value = savedSheetId;
-const savedSa = localStorage.getItem('service_account');
-if (savedSa) document.getElementById('service-account-input').value = savedSa;
 </script>
 </body>
 </html>
