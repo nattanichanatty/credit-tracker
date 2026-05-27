@@ -1063,9 +1063,11 @@ function groupSelected() {
     _grouped: true,
     _items: items
   };
+  const insertAt = Math.min(...indices);
   const sorted = [...indices].sort((a,b) => b-a);
   sorted.forEach(i => analyzedItems.splice(i, 1));
-  analyzedItems.splice(indices[0], 0, grouped);
+  const adjustedInsert = sorted.reduce((pos, i) => i < insertAt ? pos - 1 : pos, insertAt);
+  analyzedItems.splice(adjustedInsert, 0, grouped);
   document.getElementById('group-btn').style.display = 'none';
   renderResults();
 }
