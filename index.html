@@ -592,14 +592,17 @@
     <select id="items-year" class="form-input" style="width:auto;" onchange="loadMonthlyItems()"></select>
     <span style="color:var(--muted);font-size:13px;">รอบบิล</span>
   </div>
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+  <div id="items-card-filter" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;"></div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
     <div class="section-title" style="margin-bottom:0;">รายการที่บันทึกไว้ — <span id="monthly-label" style="color:var(--accent);"></span></div>
-    <button class="add-btn" onclick="saveMonthlyEdits()" style="border-color:var(--green);color:var(--green);">💾 บันทึกการแก้ไข</button>
+    <div style="display:flex;gap:8px;">
+      <button class="add-btn" id="items-group-btn" onclick="groupMonthlySelected()" style="display:none;border-color:var(--accent);color:var(--accent);">📦 รวมกลุ่มที่เลือก</button>
+      <button class="add-btn" onclick="saveMonthlyEdits()" style="border-color:var(--green);color:var(--green);">💾 บันทึกการแก้ไข</button>
+    </div>
   </div>
   <div id="monthly-items-body"><div style="color:var(--muted);font-size:13px;padding:20px;">เลือกเดือนเพื่อดูรายการ</div></div>
   <div id="monthly-save-status"></div>
 </div>
-
 <!-- INCOME TAB -->
 <div id="tab-income" class="section">
   <div class="month-selector">
@@ -1265,6 +1268,8 @@ function fileToBase64(file) {
   });
 }
 
+let itemsSelectedCard = 'all';
+
 function loadMonthlyItems() {
   const month = document.getElementById('items-month')?.value || document.getElementById('sel-month').value;
   const year = document.getElementById('items-year')?.value || document.getElementById('sel-year').value;
@@ -1274,6 +1279,20 @@ function loadMonthlyItems() {
   const label = document.getElementById('monthly-label');
   if (label) label.textContent = `${MONTHS[month-1]} ${year}`;
   const body = document.getElementById('monthly-items-body');
+
+  // render card filter buttons
+  const filterEl = document.getElementById('items-card-filter');
+  if (filterEl) {
+    const cards = ['all', ...new Set(items.map(i => i.card).filter(Boolean))];
+    filterEl.innerHTML = cards.map(card => `
+      <button onclick="setItemsCard('${card}')" 
+        style="padding:5px 14px;border-radius:20px;border:1px solid ${card===itemsSelectedCard?'var(--accent)':'var(--border)'};
+        background:${card===itemsSelectedCard?'var(--accent)':'var(--surface)'};
+        color:${card===itemsSelectedCard?'#000':'var(--muted)'};font-size:12px;cursor:pointer;font-family:var(--font);">
+        ${card === 'all' ? 'ทุกบัตร' : card}
+      </button>`).join('');
+  }
+
   if (items.length === 0) {
     if (body) body.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px;">ยังไม่มีรายการที่บันทึกไว้สำหรับเดือนนี้</div>';
     return;
@@ -1281,12 +1300,20 @@ function loadMonthlyItems() {
   renderMonthlyItems(items, month, year);
 }
 
+function setItemsCard(card) {
+  itemsSelectedCard = card;
+  loadMonthlyItems();
+}
+
 function renderMonthlyItems(items, month, year) {
   if (!month) month = document.getElementById('items-month')?.value || document.getElementById('sel-month').value;
   if (!year) year = document.getElementById('items-year')?.value || document.getElementById('sel-year').value;
-  const cards = [...new Set(items.map(i => i.card))];
+
+  const allCards = [...new Set(items.map(i => i.card).filter(Boolean))];
+  const showCards = itemsSelectedCard === 'all' ? allCards : [itemsSelectedCard];
   const body = document.getElementById('monthly-items-body');
-  body.innerHTML = cards.map(card => {
+
+  body.innerHTML = showCards.map(card => {
     const cardItems = items.filter(i => i.card === card);
     const total = cardItems.reduce((s,i) => s + i.amount_per_installment, 0);
     return `<div style="margin-bottom:20px;">
@@ -1294,18 +1321,19 @@ function renderMonthlyItems(items, month, year) {
       ${cardItems.map((item) => {
         const globalIdx = items.indexOf(item);
         if (item._grouped && item._items && item._items.length > 0) {
-          const subTotal = item._items.reduce((s,si) => s + si.amount_per_installment, 0);
           const expandId = `expand-${globalIdx}`;
           return `<div style="border:1px solid var(--border);border-radius:8px;margin-bottom:6px;overflow:hidden;">
-            <div class="list-item" style="gap:8px;flex-wrap:wrap;border-radius:0;border:none;cursor:pointer;" onclick="toggleExpand('${expandId}')">
-              <span style="font-size:13px;color:var(--accent);">▶</span>
+            <div class="list-item" style="gap:8px;flex-wrap:wrap;border-radius:0;border:none;">
+              <input type="checkbox" class="monthly-check" data-idx="${globalIdx}" onchange="onMonthlyCheckChange()">
+              <span style="font-size:13px;color:var(--accent);cursor:pointer;" onclick="toggleExpand('${expandId}')">▶</span>
               <input type="text" class="owner-input" style="min-width:160px;flex:1;" value="${item.description}"
-                oninput="updateMonthlyItem(${globalIdx},'description',this.value,'${month}','${year}')" onclick="event.stopPropagation()">
+                oninput="updateMonthlyItem(${globalIdx},'description',this.value,'${month}','${year}')">
               <span style="font-size:11px;background:#1a2a1a;color:var(--green);border:1px solid #2a4a2a;border-radius:4px;padding:2px 8px;">${item._items.length} รายการ</span>
               <span class="amount" style="color:var(--orange);">฿${item.amount_per_installment.toLocaleString()}</span>
               <input type="text" class="owner-input" style="width:110px;" value="${item.owner||''}" placeholder="ตัวเอง"
-                oninput="updateMonthlyItem(${globalIdx},'owner',this.value,'${month}','${year}')" onclick="event.stopPropagation()">
-              <button class="del-btn" onclick="event.stopPropagation();deleteMonthlyItem(${globalIdx},'${month}','${year}')" style="color:var(--red);">✕</button>
+                oninput="updateMonthlyItem(${globalIdx},'owner',this.value,'${month}','${year}')">
+              <button onclick="ungroupMonthlyItem(${globalIdx},'${month}','${year}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:2px 6px;border-radius:4px;" title="ยกเลิกกลุ่ม">↩ แยก</button>
+              <button class="del-btn" onclick="deleteMonthlyItem(${globalIdx},'${month}','${year}')" style="color:var(--red);">✕</button>
             </div>
             <div id="${expandId}" style="display:none;background:var(--surface2);border-top:1px solid var(--border);padding:8px 12px;">
               ${item._items.map(sub => `
@@ -1319,6 +1347,7 @@ function renderMonthlyItems(items, month, year) {
           </div>`;
         }
         return `<div class="list-item" style="gap:8px;flex-wrap:wrap;">
+          <input type="checkbox" class="monthly-check" data-idx="${globalIdx}" onchange="onMonthlyCheckChange()">
           <input type="text" class="owner-input" style="min-width:160px;flex:1;" value="${item.description}"
             oninput="updateMonthlyItem(${globalIdx},'description',this.value,'${month}','${year}')">
           ${item.is_installment ? `<span class="installment-badge">${item.current_installment}/${item.total_installments}</span>` : ''}
@@ -1330,6 +1359,52 @@ function renderMonthlyItems(items, month, year) {
       }).join('')}
     </div>`;
   }).join('');
+}
+
+function onMonthlyCheckChange() {
+  const checked = document.querySelectorAll('.monthly-check:checked').length;
+  const btn = document.getElementById('items-group-btn');
+  if (btn) btn.style.display = checked >= 2 ? 'inline-block' : 'none';
+}
+
+function groupMonthlySelected() {
+  const month = document.getElementById('items-month')?.value || document.getElementById('sel-month').value;
+  const year = document.getElementById('items-year')?.value || document.getElementById('sel-year').value;
+  const key = `cc_${month}_${year}`;
+  const items = JSON.parse(localStorage.getItem(key) || '[]');
+  const indices = [...document.querySelectorAll('.monthly-check:checked')].map(c => parseInt(c.dataset.idx));
+  if (indices.length < 2) return;
+  const name = prompt('ตั้งชื่อกลุ่ม:', items[indices[0]]?.description) || 'กลุ่มใหม่';
+  const groupItems = indices.map(i => items[i]);
+  const total = groupItems.reduce((s,it) => s + it.amount_per_installment, 0);
+  const grouped = {
+    description: name,
+    amount_per_installment: total,
+    current_installment: 1, total_installments: 1,
+    is_installment: false,
+    owner: groupItems[0].owner || null,
+    card: groupItems[0].card,
+    _grouped: true,
+    _items: groupItems
+  };
+  const insertAt = Math.min(...indices);
+  const sorted = [...indices].sort((a,b) => b-a);
+  sorted.forEach(i => items.splice(i, 1));
+  const adjustedInsert = sorted.reduce((pos, i) => i < insertAt ? pos - 1 : pos, insertAt);
+  items.splice(adjustedInsert, 0, grouped);
+  localStorage.setItem(key, JSON.stringify(items));
+  document.getElementById('items-group-btn').style.display = 'none';
+  renderMonthlyItems(items, month, year);
+}
+
+function ungroupMonthlyItem(idx, month, year) {
+  const key = `cc_${month}_${year}`;
+  const items = JSON.parse(localStorage.getItem(key) || '[]');
+  const item = items[idx];
+  if (!item?._grouped) return;
+  items.splice(idx, 1, ...item._items);
+  localStorage.setItem(key, JSON.stringify(items));
+  renderMonthlyItems(items, month, year);
 }
 
 function toggleExpand(id) {
